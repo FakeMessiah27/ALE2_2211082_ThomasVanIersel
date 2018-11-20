@@ -5,8 +5,29 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ALE2_2211082_ThomasVanIersel"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="ALE2_2211082_ThomasVanIersel" Height="537" Width="581">
     <Grid>
-        
+        <Label Content="Selected file:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="lblSelectedFile" Content="None" HorizontalAlignment="Left" Margin="92,10,0,0" VerticalAlignment="Top"/>
+        <Button x:Name="btnBrowse" Content="Browse" Margin="0,13,10,0" VerticalAlignment="Top" Click="BtnBrowse_Click" HorizontalAlignment="Right" Width="81"/>
+        <TabControl x:Name="tcMain" Margin="10,61,12,13">
+            <TabItem x:Name="tabItemResults" Header="Results" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="54">
+                <Grid Background="LightBlue">
+                    <Label Content="DFA:" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <Label x:Name="lblIsDFA" Content="lblIsDFA" HorizontalAlignment="Left" Margin="39,0,0,0" VerticalAlignment="Top" Visibility="Hidden"/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="tabItemGraph" Header="Graph" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="54">
+                <Grid Background="LightBlue">
+                    <local:ZoomBorder x:Name="border" ClipToBounds="True">
+                        <Image x:Name="graph" Height="359" Margin="0,30,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="525"/>
+                    </local:ZoomBorder>
+                    <Label x:Name="lblGraph" Content="Graph:" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Height="26" Width="45"/>
+                    <Label Content="Help" HorizontalAlignment="Left" Margin="261,0,0,0" VerticalAlignment="Top" Height="26" Width="35" ToolTip="Use scroll wheel to zoom, left click and drag to pan, right click to reset."/>
+                    <Button x:Name="btnSetPath" Content="Set GraphViz path" HorizontalAlignment="Left" Margin="431,3,0,0" VerticalAlignment="Top" Width="104" Height="23" Click="BtnSetPath_Click"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <Button x:Name="btnExecute" Content="Execute" HorizontalAlignment="Left" Margin="12,36,0,0" VerticalAlignment="Top" Width="75" Click="BtnExecute_Click"/>
     </Grid>
 </Window>
