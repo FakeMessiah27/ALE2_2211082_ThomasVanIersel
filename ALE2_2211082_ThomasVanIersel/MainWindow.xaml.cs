@@ -102,7 +102,8 @@ namespace ALE2_2211082_ThomasVanIersel
             List<State> states = new List<State>();
             List<string> finals = new List<string>();
             List<Transition> transitions = new List<Transition>();
-            bool isTransition = false;
+
+            MultiLineType currentMultiLineType = MultiLineType.None;
 
             foreach (string line in lines)
             {
@@ -112,7 +113,8 @@ namespace ALE2_2211082_ThomasVanIersel
                     // Split the line into two parts. The left side of the colon is the identifier, the right side the value.
                     string[] splitLine = line.Split(':');
 
-                    switch (splitLine[0])
+                    // Make sure the identifier is in lower case.
+                    switch (splitLine[0].ToLower())
                     {
                         case "alphabet":
                             alphabet = splitLine[1].Trim();
@@ -133,15 +135,19 @@ namespace ALE2_2211082_ThomasVanIersel
                             break;
                         case "transitions":
                             // If the transitions line is found, all subsequent lines until the line containing "end." describe transitions.
-                            isTransition = true;
+                            currentMultiLineType = MultiLineType.Transitions;
+                            break;
+                        case "words":
+                            // If the transitions line is found, all subsequent lines until the line containing "end." describe transitions.
+                            currentMultiLineType = MultiLineType.Words;
                             break;
                     }
                 }
                 else if (line == "end.")
                 {
-                    isTransition = false;
+                    currentMultiLineType = MultiLineType.None;
                 }
-                else if (isTransition)
+                else if (currentMultiLineType == MultiLineType.Transitions)
                 {
                     string[] commaSplitLine = line.Split(',');
                     State firstState = states.Find(s => s.StateName == commaSplitLine[0]);
@@ -149,6 +155,10 @@ namespace ALE2_2211082_ThomasVanIersel
                     string label = commaSplitLine[1].First().ToString();
 
                     transitions.Add(new Transition(firstState, secondState, label));
+                }
+                else if (currentMultiLineType == MultiLineType.Words)
+                {
+                    // Do word stuff.
                 }
             }
 
@@ -165,6 +175,16 @@ namespace ALE2_2211082_ThomasVanIersel
             string fileName = Utilities.Slice(selectedFilePath, fileNameStart, selectedFilePath.Count());
 
             lblSelectedFile.Content = fileName;
+        }
+
+        #endregion
+        #region ---------------------------------- Enumerations -----------------------------------
+
+        private enum MultiLineType
+        {
+            None,
+            Transitions,
+            Words
         }
 
         #endregion
