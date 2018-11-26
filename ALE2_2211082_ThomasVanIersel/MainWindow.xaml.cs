@@ -42,13 +42,25 @@ namespace ALE2_2211082_ThomasVanIersel
             if (String.IsNullOrWhiteSpace(selectedFilePath))
                 return;
 
-            automaton = ReadAutomatonFile();
+            try
+            {
+                automaton = ReadAutomatonFile();
+            }
+            catch (IOException)
+            {
+                string errorMessage = "The selected file could not be opened or was not found.";
+                DisplayErrorMessage(errorMessage);
+
+                return;
+            }
 
             if (automaton.Transitions.All(t => t.Label == "_"))
             {
                 // If the automaton only has epsilon transitions, it is considered invalid.
                 string errorMessage = "The Automaton's transitions cannot all be epsilon (empty) transitions!";
-                System.Windows.MessageBox.Show(errorMessage, "Error!");
+                DisplayErrorMessage(errorMessage);
+
+                return;
             }
 
             lblIsDFA.Content = automaton.IsDFA() ? "Yes" : "No";
@@ -67,7 +79,7 @@ namespace ALE2_2211082_ThomasVanIersel
                 // If the graph was not created successfully, the system could not find GraphViz' "dot.exe".
                 string errorMessage = "Couldn't find GraphViz' \"dot.exe\"! Please ensure you have it installed on your computer and have your PATH variables set up correctly.\n\n" +
                     "Alternatively, use the button on the Graph tab to set the path to your GraphViz  \"dot.exe\".";
-                System.Windows.MessageBox.Show(errorMessage, "Error!");
+                DisplayErrorMessage(errorMessage);
             }
 
             Dictionary<string, bool> testedWords = CheckTestWords(testWords.Keys.ToList());
@@ -136,6 +148,7 @@ namespace ALE2_2211082_ThomasVanIersel
         {
             // Read all lines.
             string[] lines = System.IO.File.ReadAllLines(selectedFilePath);
+            
             // Prepare variables to hold data from the file.
             string alphabet = "";
             List<State> states = new List<State>();
@@ -246,6 +259,11 @@ namespace ALE2_2211082_ThomasVanIersel
         {
             lbWordTesting.Items.Clear();
             lbWordTesting.Items.Add("Word:\t\tAccepted:\tFrom file:");
+        }
+
+        private void DisplayErrorMessage(string message)
+        {
+            System.Windows.MessageBox.Show(message, "Error!");
         }
 
         #endregion
