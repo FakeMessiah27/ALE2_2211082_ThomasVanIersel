@@ -13,6 +13,9 @@ namespace ALE2_2211082_ThomasVanIersel
     public partial class MainWindow : Window
     {
         GraphvizHelper gh;
+        Automaton automaton;
+
+        Dictionary<string, bool> testWords;
         string selectedFilePath;
 
         public MainWindow()
@@ -20,19 +23,33 @@ namespace ALE2_2211082_ThomasVanIersel
             InitializeComponent();
 
             gh = new GraphvizHelper();
-            selectedFilePath = Directory.GetCurrentDirectory() + @"\Automaton Files\a2.txt";
+            
+            // Currently hard-coding file location for ease of testing.
+            selectedFilePath = Directory.GetCurrentDirectory() + @"\Automaton Files\a3.txt";
             SetSelectedFileLabel();
+            SetupListBox();
         }
 
         #region ------------------------------- UI Event Handlers ---------------------------------
 
         private void BtnExecute_Click(object sender, RoutedEventArgs e)
         {
+            // Reset the test words variable and the test words list box.
+            testWords = new Dictionary<string, bool>();
+            SetupListBox();
+
             // Do nothing if the path isn't set.
             if (String.IsNullOrWhiteSpace(selectedFilePath))
                 return;
 
-            Automaton automaton = ReadAutomatonFile();
+            automaton = ReadAutomatonFile();
+
+            if (automaton.Transitions.All(t => t.Label == "_"))
+            {
+                // If the automaton only has epsilon transitions, it is considered invalid.
+                string errorMessage = "The Automaton's transitions cannot all be epsilon (empty) transitions!";
+                System.Windows.MessageBox.Show(errorMessage, "Error!");
+            }
 
             lblIsDFA.Content = automaton.IsDFA() ? "Yes" : "No";
             lblIsDFA.Visibility = Visibility.Visible;
@@ -51,6 +68,15 @@ namespace ALE2_2211082_ThomasVanIersel
                 string errorMessage = "Couldn't find GraphViz' \"dot.exe\"! Please ensure you have it installed on your computer and have your PATH variables set up correctly.\n\n" +
                     "Alternatively, use the button on the Graph tab to set the path to your GraphViz  \"dot.exe\".";
                 System.Windows.MessageBox.Show(errorMessage, "Error!");
+            }
+
+            Dictionary<string, bool> testedWords = CheckTestWords(testWords.Keys.ToList());
+            foreach (var pair in testedWords)
+            {
+                lbWordTesting.Items.Add(String.Format("{0}\t\t{1}\t\t{2}", 
+                    pair.Key, 
+                    pair.Value ? "Y" : "N", 
+                    testWords[pair.Key] ? "Y" : "N"));
             }
         }
 
@@ -86,6 +112,19 @@ namespace ALE2_2211082_ThomasVanIersel
             SetSelectedFileLabel();
         }
 
+        private void BtnTestWord_Click(object sender, RoutedEventArgs e)
+        {
+            if (automaton == null)
+                return;
+
+            string word = tbTestWord.Text;
+            bool isAccepted = automaton.IsAcceptedWord(word, automaton.States.First());
+
+            lbWordTesting.Items.Insert(1, String.Format("{0}\t\t{1}\t\tN/A",
+                    word,
+                    isAccepted ? "Y" : "N"));
+        }
+
         #endregion
         #region ------------------------------------ METHODS --------------------------------------
 
@@ -107,6 +146,10 @@ namespace ALE2_2211082_ThomasVanIersel
 
             foreach (string line in lines)
             {
+                // Ignore empty lines.
+                if (line == "")
+                    continue;
+
                 // If the lines contains a colon, it indicates a special case such as the alphabet line or the finals line.
                 if (line.Contains(':'))
                 {
@@ -158,7 +201,8 @@ namespace ALE2_2211082_ThomasVanIersel
                 }
                 else if (currentMultiLineType == MultiLineType.Words)
                 {
-                    // Do word stuff.
+                    string[] splitLine = line.Split(',');
+                    testWords.Add(splitLine[0], splitLine[1].Trim() == "y");
                 }
             }
 
@@ -166,6 +210,24 @@ namespace ALE2_2211082_ThomasVanIersel
             return new Automaton(alphabet, states, transitions);
         }
         
+        /// <summary>
+        /// Run all the test words found in the automaton text file through the word checker method.
+        /// </summary>
+        /// <param name="words"></param>
+        /// <returns>Returns a Dictionary of string/bool. The string is the word that was checked and the bool indicates 
+        /// if it was accepted by the automaton or not.</returns>
+        private Dictionary<string, bool> CheckTestWords(List<string> words)
+        {
+            Dictionary<string, bool> result = new Dictionary<string, bool>();
+
+            foreach (string word in words)
+            {
+                result.Add(word, automaton.IsAcceptedWord(word, automaton.States.First()));
+            }
+
+            return result;
+        }
+
         /// <summary>
         ///  Changes the selected file label to the currently selected file's name.
         /// </summary>
@@ -175,6 +237,15 @@ namespace ALE2_2211082_ThomasVanIersel
             string fileName = Utilities.Slice(selectedFilePath, fileNameStart, selectedFilePath.Count());
 
             lblSelectedFile.Content = fileName;
+        }
+
+        /// <summary>
+        /// Sets the header of the listbox.
+        /// </summary>
+        private void SetupListBox()
+        {
+            lbWordTesting.Items.Clear();
+            lbWordTesting.Items.Add("Word:\t\tAccepted:\tFrom file:");
         }
 
         #endregion
