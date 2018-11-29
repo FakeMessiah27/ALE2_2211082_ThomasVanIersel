@@ -92,7 +92,7 @@ namespace ALE2_2211082_ThomasVanIersel
             }
         }
 
-        private void BtnSetPath_Click(object sender, RoutedEventArgs e)
+        private void BtnSetDotPath_Click(object sender, RoutedEventArgs e)
         {
             using (var ofd = new OpenFileDialog())
             {
@@ -107,7 +107,7 @@ namespace ALE2_2211082_ThomasVanIersel
             }
         }
 
-        private void BtnBrowse_Click(object sender, RoutedEventArgs e)
+        private void BtnBrowseFile_Click(object sender, RoutedEventArgs e)
         {
             using (var ofd = new OpenFileDialog())
             {

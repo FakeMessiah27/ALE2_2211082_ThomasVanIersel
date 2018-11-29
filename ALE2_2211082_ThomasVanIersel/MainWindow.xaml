@@ -9,7 +9,7 @@
     <Grid>
         <Label Content="Selected file:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
         <Label x:Name="lblSelectedFile" Content="None" HorizontalAlignment="Left" Margin="92,10,0,0" VerticalAlignment="Top"/>
-        <Button x:Name="btnBrowse" Content="Browse" Margin="0,13,10,0" VerticalAlignment="Top" Click="BtnBrowse_Click" HorizontalAlignment="Right" Width="81"/>
+        <Button x:Name="btnBrowse" Content="Browse" Margin="0,13,10,0" VerticalAlignment="Top" Click="BtnBrowseFile_Click" HorizontalAlignment="Right" Width="81"/>
         <TabControl x:Name="tcMain" Margin="10,61,12,13">
             <TabItem x:Name="tabItemResults" Header="Results" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="54">
                 <Grid Background="LightBlue">
@@ -29,7 +29,7 @@
                     </local:ZoomBorder>
                     <Label x:Name="lblGraph" Content="Graph:" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Height="26" Width="45"/>
                     <Label Content="Help" HorizontalAlignment="Left" Margin="261,0,0,0" VerticalAlignment="Top" Height="26" Width="35" ToolTip="Use scroll wheel to zoom, left click and drag to pan, right click to reset."/>
-                    <Button x:Name="btnSetPath" Content="Set GraphViz path" HorizontalAlignment="Left" Margin="431,3,0,0" VerticalAlignment="Top" Width="104" Height="23" Click="BtnSetPath_Click"/>
+                    <Button x:Name="btnSetPath" Content="Set GraphViz path" HorizontalAlignment="Left" Margin="431,3,0,0" VerticalAlignment="Top" Width="104" Height="23" Click="BtnSetDotPath_Click"/>
                 </Grid>
             </TabItem>
         </TabControl>
