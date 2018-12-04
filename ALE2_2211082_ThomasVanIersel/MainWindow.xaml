@@ -5,12 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ALE2_2211082_ThomasVanIersel"
         mc:Ignorable="d"
-        Title="ALE2_2211082_ThomasVanIersel" Height="537" Width="581">
+        Title="ALE2_2211082_ThomasVanIersel" Height="593" Width="581">
     <Grid>
-        <Label Content="Selected file:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
-        <Label x:Name="lblSelectedFile" Content="None" HorizontalAlignment="Left" Margin="92,10,0,0" VerticalAlignment="Top"/>
-        <Button x:Name="btnBrowse" Content="Browse" Margin="0,13,10,0" VerticalAlignment="Top" Click="BtnBrowseFile_Click" HorizontalAlignment="Right" Width="81"/>
-        <TabControl x:Name="tcMain" Margin="10,61,12,13">
+        <TabControl x:Name="tcMain" Margin="10,153,12,13">
             <TabItem x:Name="tabItemResults" Header="Results" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="54">
                 <Grid Background="LightBlue">
                     <Label Content="DFA:" HorizontalAlignment="Left" VerticalAlignment="Top"/>
@@ -33,6 +30,39 @@
                 </Grid>
             </TabItem>
         </TabControl>
-        <Button x:Name="btnExecute" Content="Execute" HorizontalAlignment="Left" Margin="12,36,0,0" VerticalAlignment="Top" Width="75" Click="BtnExecute_Click"/>
+        <Button x:Name="btnExecute" Content="Execute" HorizontalAlignment="Left" Margin="10,115,0,0" VerticalAlignment="Top" Width="75" Click="BtnExecute_Click"/>
+        <Grid Margin="10,10,10,0" ShowGridLines="True" Height="100" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="275*"/>
+                <ColumnDefinition Width="274*"/>
+            </Grid.ColumnDefinitions>
+            <Rectangle x:Name="recRegularExpression" Grid.RowSpan="1000" Visibility="Hidden">
+                <Rectangle.Fill>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="#FF83FF97" Offset="0" />
+                        <GradientStop Color="White" Offset="1" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Rectangle x:Name="recSelectFile" Grid.Column="1" Grid.RowSpan="1000">
+                <Rectangle.Fill>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="#FF83FF97" Offset="0" />
+                        <GradientStop Color="White" Offset="1" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Border BorderThickness="1" BorderBrush="Gray" Grid.ColumnSpan="2">
+            </Border>
+            <Label Content="Enter a Regular Expression" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" FontSize="18" FontWeight="Bold"/>
+            <Label Content="Or select a file" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" FontSize="18" FontWeight="Bold" Grid.Column="1"/>
+            <Button x:Name="btnBrowse" Content="Browse" Margin="14,69,0,0" VerticalAlignment="Top" Click="BtnBrowseFile_Click" HorizontalAlignment="Left" Width="81" Grid.Column="1"/>
+            <Label Content="Selected file:" HorizontalAlignment="Left" Margin="10,44,0,0" Grid.Column="1" Height="26" VerticalAlignment="Top"/>
+            <Label x:Name="lblSelectedFile" Content="None" Margin="92,44,0,0" Grid.Column="1" HorizontalAlignment="Left" Width="39" Height="26" VerticalAlignment="Top"/>
+            <TextBox x:Name="tbRegularExpression" Height="23" Margin="10,49,33,0" TextWrapping="Wrap" VerticalAlignment="Top" ToolTip="The regular expression must be in prefix notation" Text="|(.(|(e,f),.(f,g)),|(b,*(c)))"/>
+            <RadioButton x:Name="rbRegularExpression" Content="" HorizontalAlignment="Right" Margin="0,3,2,0" VerticalAlignment="Top" Width="15" Checked="RbRegularExpression_Checked" IsChecked="True"/>
+            <RadioButton x:Name="rbSelectFile" HorizontalAlignment="Left" Margin="2,3,0,0" VerticalAlignment="Top" Grid.Column="1" Width="14" Checked="RbSelectFile_Checked"/>
+        </Grid>
+
     </Grid>
 </Window>

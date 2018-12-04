@@ -91,8 +91,16 @@ namespace ALE2_2211082_ThomasVanIersel
                     // Recursively search the found transition(s).
                     // For the word parameters, we pass the current word minus the first letter.
                     // For the state we pass the state that the current transition would lead us to.
-                    if (IsAcceptedWord(word.Substring(1), t.SecondState))
-                        return true;
+                    if (t.Label == "_")
+                    {
+                        if (IsAcceptedWord(word, t.SecondState))
+                            return true;
+                    }
+                    else
+                    {
+                        if (IsAcceptedWord(word.Substring(1), t.SecondState))
+                            return true;
+                    }
                 }
 
                 // If none of the transitions had any more outbound transitions that would have allowed us to continue,

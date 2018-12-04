@@ -17,6 +17,7 @@ namespace ALE2_2211082_ThomasVanIersel
 
         Dictionary<string, bool> testWords;
         string selectedFilePath;
+        ExecutionType executionType;
 
         public MainWindow()
         {
@@ -34,26 +35,65 @@ namespace ALE2_2211082_ThomasVanIersel
 
         private void BtnExecute_Click(object sender, RoutedEventArgs e)
         {
-            // Reset the test words variable and the test words list box.
-            testWords = new Dictionary<string, bool>();
-            SetupListBox();
-
-            // Do nothing if the path isn't set.
-            if (String.IsNullOrWhiteSpace(selectedFilePath))
-                return;
-
-            try
+            switch (executionType)
             {
-                automaton = ReadAutomatonFile();
-            }
-            catch (IOException)
-            {
-                string errorMessage = "The selected file could not be opened or was not found.";
-                DisplayErrorMessage(errorMessage);
+                case ExecutionType.SelectFile:
+                    {
+                        // Reset the test words variable and the test words list box.
+                        testWords = new Dictionary<string, bool>();
+                        SetupListBox();
 
-                return;
-            }
+                        // Do nothing if the path isn't set.
+                        if (String.IsNullOrWhiteSpace(selectedFilePath))
+                            return;
 
+                        try
+                        {
+                            automaton = ReadAutomatonFile();
+                        }
+                        catch (IOException)
+                        {
+                            string errorMessage = "The selected file could not be opened or was not found.";
+                            DisplayErrorMessage(errorMessage);
+
+                            return;
+                        }
+
+                        Dictionary<string, bool> testedWords = AutomatonUtilities.CheckTestWords(testWords.Keys.ToList(), automaton);
+                        foreach (var pair in testedWords)
+                        {
+                            lbWordTesting.Items.Add(string.Format("{0}\t\t{1}\t\t{2}",
+                                pair.Key,
+                                pair.Value ? "Y" : "N",
+                                testWords[pair.Key] ? "Y" : "N"));
+                        }
+
+                        break;
+                    }
+                case ExecutionType.RegularExpression:
+                    {
+                        string regularExpression = tbRegularExpression.Text;
+                        
+                        // Do nothing if the text box was empty.
+                        if (string.IsNullOrWhiteSpace(regularExpression))
+                            return;
+
+                        // Remove spaces.
+                        regularExpression = regularExpression.Replace(" ", "");
+
+                        automaton = ReadRegularExpression(regularExpression);
+
+                        if (automaton == null)
+                        {
+                            string errorMessage = "The regular expression is in an invalid format.";
+                            DisplayErrorMessage(errorMessage);
+                            return;
+                        }
+
+                        break;
+                    }
+            }
+            
             if (automaton.Transitions.All(t => t.Label == "_"))
             {
                 // If the automaton only has epsilon transitions, it is considered invalid.
@@ -81,17 +121,8 @@ namespace ALE2_2211082_ThomasVanIersel
                     "Alternatively, use the button on the Graph tab to set the path to your GraphViz  \"dot.exe\".";
                 DisplayErrorMessage(errorMessage);
             }
-
-            Dictionary<string, bool> testedWords = CheckTestWords(testWords.Keys.ToList());
-            foreach (var pair in testedWords)
-            {
-                lbWordTesting.Items.Add(String.Format("{0}\t\t{1}\t\t{2}", 
-                    pair.Key, 
-                    pair.Value ? "Y" : "N", 
-                    testWords[pair.Key] ? "Y" : "N"));
-            }
         }
-
+        
         private void BtnSetDotPath_Click(object sender, RoutedEventArgs e)
         {
             using (var ofd = new OpenFileDialog())
@@ -135,6 +166,20 @@ namespace ALE2_2211082_ThomasVanIersel
             lbWordTesting.Items.Insert(1, String.Format("{0}\t\t{1}\t\tN/A",
                     word,
                     isAccepted ? "Y" : "N"));
+        }
+
+        private void RbSelectFile_Checked(object sender, RoutedEventArgs e)
+        {
+            recSelectFile.Visibility = Visibility.Visible;
+            recRegularExpression.Visibility = Visibility.Hidden;
+            executionType = ExecutionType.SelectFile;
+        }
+
+        private void RbRegularExpression_Checked(object sender, RoutedEventArgs e)
+        {
+            recSelectFile.Visibility = Visibility.Hidden;
+            recRegularExpression.Visibility = Visibility.Visible;
+            executionType = ExecutionType.RegularExpression;
         }
 
         #endregion
@@ -222,23 +267,36 @@ namespace ALE2_2211082_ThomasVanIersel
             // Create a new Automaton and return it.
             return new Automaton(alphabet, states, transitions);
         }
-        
+
         /// <summary>
-        /// Run all the test words found in the automaton text file through the word checker method.
+        /// Creates an Automaton object from a regular expression.
         /// </summary>
-        /// <param name="words"></param>
-        /// <returns>Returns a Dictionary of string/bool. The string is the word that was checked and the bool indicates 
-        /// if it was accepted by the automaton or not.</returns>
-        private Dictionary<string, bool> CheckTestWords(List<string> words)
+        /// <param name="input">Regular expression in prefix notation.</param>
+        /// <returns></returns>
+        private Automaton ReadRegularExpression(string input)
         {
-            Dictionary<string, bool> result = new Dictionary<string, bool>();
+            // Check if the regular expression is in a valid format.
+            if (Utilities.RegularExpressionIsValid(input) == false)
+                return null;
 
-            foreach (string word in words)
+            // Get the first character of the regular expression.
+            string op = input[0].ToString();
+            // Create a counter to use for unique State names.
+            int stateCounter = 1;
+            // Set up the initial and final states.
+            State firstState = new State("S" + stateCounter++);
+            State lastState = new State("S" + stateCounter++, true);
+
+            try
             {
-                result.Add(word, automaton.IsAcceptedWord(word, automaton.States.First()));
+                automaton = AutomatonUtilities.CreateAutomaton(op, input, ref stateCounter, firstState, lastState);
             }
-
-            return result;
+            catch (Exception)
+            {
+                return null;
+            }
+            
+            return automaton;
         }
 
         /// <summary>
@@ -274,6 +332,12 @@ namespace ALE2_2211082_ThomasVanIersel
             None,
             Transitions,
             Words
+        }
+
+        private enum ExecutionType
+        {
+            SelectFile,
+            RegularExpression
         }
 
         #endregion
