@@ -21,7 +21,7 @@ namespace ALE2_2211082_ThomasVanIersel
         public bool CreateGraph(Automaton automaton)
         {
             // Create a new unique datetimeSeed to act as a filename each time a new helper is created.
-            datetimeSeed = CreateDatetimeSeed();
+            datetimeSeed = Utilities.CreateDatetimeSeed();
 
             // Get the path to application's directory.
             string outputFilesPath = Directory.GetCurrentDirectory() + "\\Outputs\\";
@@ -60,7 +60,7 @@ namespace ALE2_2211082_ThomasVanIersel
         {
             Process dot = new Process();
 
-            if (String.IsNullOrWhiteSpace(DotProcessFileName) == false)
+            if (string.IsNullOrWhiteSpace(DotProcessFileName) == false)
             {
                 if (DotProcessFileName.Contains("dot.exe") == true)
                     dot.StartInfo.FileName = DotProcessFileName;
@@ -72,7 +72,7 @@ namespace ALE2_2211082_ThomasVanIersel
                 dot.StartInfo.FileName = @"dot.exe";
             }
 
-            dot.StartInfo.Arguments = String.Format("-Tpng -o{0}.png {0}.dot", outputFilesPath + "\\" + datetimeSeed);
+            dot.StartInfo.Arguments = string.Format("-Tpng -o{0}.png {0}.dot", outputFilesPath + "\\" + datetimeSeed);
 
             try
             {
@@ -84,25 +84,6 @@ namespace ALE2_2211082_ThomasVanIersel
             {
                 return false;
             }
-        }
-
-        /// <summary>
-        /// Creates a string of numbers from the current system date and time.
-        /// </summary>
-        /// <returns></returns>
-        private string CreateDatetimeSeed()
-        {
-            string datetime = DateTime.Now.ToString();
-            string datetimeSeed = "";
-
-            // Remove any special characters.
-            foreach (char c in datetime)
-            {
-                if (Char.IsLetterOrDigit(c) == true)
-                    datetimeSeed += c;
-            }
-
-            return datetimeSeed;
         }
 
         /// <summary>
@@ -118,14 +99,14 @@ namespace ALE2_2211082_ThomasVanIersel
                 // Final states get a double circle, non-final states get a normal circle.
                 // Ex: "A" [shape=doublecircle]
                 if (s.IsFinal)
-                    tw.WriteLine(String.Format("\"{0}\" [shape=doublecircle]", s));
+                    tw.WriteLine(string.Format("\"{0}\" [shape=doublecircle]", s));
                 else
-                    tw.WriteLine(String.Format("\"{0}\" [shape=circle]", s));
+                    tw.WriteLine(string.Format("\"{0}\" [shape=circle]", s));
             }
 
             // Write the line for the entry transition (which is always the first state of the Automaton.
             // Ex: "" -> "C"
-            tw.WriteLine(String.Format("\"\" -> \"{0}\"", automaton.States.First()));
+            tw.WriteLine(string.Format("\"\" -> \"{0}\"", automaton.States.First()));
 
             // Write the lines for all of the transitions.
             foreach (Transition t in automaton.Transitions)
@@ -133,9 +114,9 @@ namespace ALE2_2211082_ThomasVanIersel
                 // An empty transition is recorded with an underscore ("_"); it will be written in the graph with an epsilon ("ε").
                 // Ex: "C" -> "A" [label="ε"] (This would be a transition from state C to state A with label ε).
                 if (t.Label == "_")
-                    tw.WriteLine(String.Format("\"{0}\" -> \"{1}\" [label=\"ε\"]", t.FirstState, t.SecondState));
+                    tw.WriteLine(string.Format("\"{0}\" -> \"{1}\" [label=\"ε\"]", t.FirstState, t.SecondState));
                 else
-                    tw.WriteLine(String.Format("\"{0}\" -> \"{1}\" [label=\"{2}\"]", t.FirstState, t.SecondState, t.Label));
+                    tw.WriteLine(string.Format("\"{0}\" -> \"{1}\" [label=\"{2}\"]", t.FirstState, t.SecondState, t.Label));
             }
         }
 

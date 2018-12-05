@@ -31,6 +31,7 @@
             </TabItem>
         </TabControl>
         <Button x:Name="btnExecute" Content="Execute" HorizontalAlignment="Left" Margin="10,115,0,0" VerticalAlignment="Top" Width="75" Click="BtnExecute_Click"/>
+        <Button x:Name="btnWriteToFile" Content="Write to file" HorizontalAlignment="Left" Margin="90,115,0,0" VerticalAlignment="Top" Width="75" Click="BtnWriteToFile_Click" ToolTip="Write the automaton to a text file." IsEnabled="False"/>
         <Grid Margin="10,10,10,0" ShowGridLines="True" Height="100" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="275*"/>
@@ -63,6 +64,7 @@
             <RadioButton x:Name="rbRegularExpression" Content="" HorizontalAlignment="Right" Margin="0,3,2,0" VerticalAlignment="Top" Width="15" Checked="RbRegularExpression_Checked" IsChecked="True"/>
             <RadioButton x:Name="rbSelectFile" HorizontalAlignment="Left" Margin="2,3,0,0" VerticalAlignment="Top" Grid.Column="1" Width="14" Checked="RbSelectFile_Checked"/>
         </Grid>
+        
 
     </Grid>
 </Window>

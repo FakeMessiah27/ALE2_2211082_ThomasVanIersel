@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -146,6 +147,81 @@ namespace ALE2_2211082_ThomasVanIersel
         public List<Transition> GetPossibleEpsilonTransitions(State state)
         {
             return Transitions.Where(t => t.FirstState == state && t.Label == "_").ToList();
+        }
+
+        /// <summary>
+        /// Writes the Automaton to a text file in the directory where the application is running.
+        /// </summary>
+        public void WriteToFile()
+        {
+            // Create a new unique datetimeSeed to act as a filename each time a new helper is created.
+            string datetimeSeed = Utilities.CreateDatetimeSeed();
+
+            // Get the path to application's directory.
+            string outputFilesPath = Directory.GetCurrentDirectory() + "\\";
+
+            // Create a string for the path to the new .txt file that will be created.
+            string txtFilePath = outputFilesPath + "automaton" + datetimeSeed + ".txt";
+
+            // Create the new file.
+            var file = File.Create(txtFilePath);
+            file.Close();
+
+            // Write contents of the .txt file.
+            using (TextWriter tw = new StreamWriter(txtFilePath))
+            {
+                // Alphabet
+                tw.WriteLine("alphabet: " + Alphabet);
+
+                // States.
+                string statesLine = "states: ";
+                foreach (var s in States)
+                {
+                    statesLine += s.StateName + ",";
+                }
+                tw.WriteLine(statesLine.TrimEnd(','));
+
+                // Final states.
+                string finalLine = "final: ";
+                foreach (var s in States)
+                {
+                    if (s.IsFinal)
+                    {
+                        finalLine += s.StateName + ",";
+                    }
+                }
+                tw.WriteLine(finalLine.TrimEnd(','));
+
+                // Transitions header.
+                tw.WriteLine("transitions:");
+                // Lines for the Transitions.
+                foreach (var t in Transitions)
+                {
+                    tw.WriteLine(string.Format("{0},{1} --> {2}", t.FirstState, t.Label, t.SecondState));
+                }
+                // Transitions ending.
+                tw.WriteLine("end.");
+
+                // White line
+                tw.WriteLine();
+
+                // Words header.
+                tw.WriteLine("words:");
+                // Words are unknown for a generated automaton file.
+                // Leave an empty line to allow user to manually add them.
+                tw.WriteLine();
+                // Words ending.
+                tw.WriteLine("end.");
+
+                // White line
+                tw.WriteLine();
+
+                // DFA test vector.
+                if (this.IsDFA())
+                    tw.WriteLine("dfa:y");
+                else
+                    tw.WriteLine("dfa:n");
+            }
         }
 
         #endregion

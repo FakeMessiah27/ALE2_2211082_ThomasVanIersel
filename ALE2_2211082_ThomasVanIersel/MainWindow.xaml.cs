@@ -121,6 +121,8 @@ namespace ALE2_2211082_ThomasVanIersel
                     "Alternatively, use the button on the Graph tab to set the path to your GraphViz  \"dot.exe\".";
                 DisplayErrorMessage(errorMessage);
             }
+
+            btnWriteToFile.IsEnabled = true;
         }
         
         private void BtnSetDotPath_Click(object sender, RoutedEventArgs e)
@@ -168,6 +170,11 @@ namespace ALE2_2211082_ThomasVanIersel
                     isAccepted ? "Y" : "N"));
         }
 
+        private void BtnWriteToFile_Click(object sender, RoutedEventArgs e)
+        {
+            automaton.WriteToFile();
+        }
+
         private void RbSelectFile_Checked(object sender, RoutedEventArgs e)
         {
             recSelectFile.Visibility = Visibility.Visible;
@@ -181,6 +188,7 @@ namespace ALE2_2211082_ThomasVanIersel
             recRegularExpression.Visibility = Visibility.Visible;
             executionType = ExecutionType.RegularExpression;
         }
+
 
         #endregion
         #region ------------------------------------ METHODS --------------------------------------
@@ -341,5 +349,6 @@ namespace ALE2_2211082_ThomasVanIersel
         }
 
         #endregion
+        
     }
 }
