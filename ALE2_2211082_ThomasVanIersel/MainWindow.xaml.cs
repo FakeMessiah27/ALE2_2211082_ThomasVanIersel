@@ -54,7 +54,7 @@ namespace ALE2_2211082_ThomasVanIersel
                         catch (IOException)
                         {
                             string errorMessage = "The selected file could not be opened or was not found.";
-                            DisplayErrorMessage(errorMessage);
+                            DisplayMessageBox(errorMessage);
 
                             return;
                         }
@@ -86,7 +86,7 @@ namespace ALE2_2211082_ThomasVanIersel
                         if (automaton == null)
                         {
                             string errorMessage = "The regular expression is in an invalid format.";
-                            DisplayErrorMessage(errorMessage);
+                            DisplayMessageBox(errorMessage);
                             return;
                         }
 
@@ -98,7 +98,7 @@ namespace ALE2_2211082_ThomasVanIersel
             {
                 // If the automaton only has epsilon transitions, it is considered invalid.
                 string errorMessage = "The Automaton's transitions cannot all be epsilon (empty) transitions!";
-                DisplayErrorMessage(errorMessage);
+                DisplayMessageBox(errorMessage);
 
                 return;
             }
@@ -119,10 +119,11 @@ namespace ALE2_2211082_ThomasVanIersel
                 // If the graph was not created successfully, the system could not find GraphViz' "dot.exe".
                 string errorMessage = "Couldn't find GraphViz' \"dot.exe\"! Please ensure you have it installed on your computer and have your PATH variables set up correctly.\n\n" +
                     "Alternatively, use the button on the Graph tab to set the path to your GraphViz  \"dot.exe\".";
-                DisplayErrorMessage(errorMessage);
+                DisplayMessageBox(errorMessage);
             }
 
-            btnWriteToFile.IsEnabled = true;
+            if (automaton != null)
+                btnWriteToFile.IsEnabled = true;
         }
         
         private void BtnSetDotPath_Click(object sender, RoutedEventArgs e)
@@ -172,7 +173,23 @@ namespace ALE2_2211082_ThomasVanIersel
 
         private void BtnWriteToFile_Click(object sender, RoutedEventArgs e)
         {
-            automaton.WriteToFile();
+            if (automaton == null)
+            {
+                // If the automaton was not created, show an error message.
+                string errorMessage = "No automaton found, please click execute again.";
+                DisplayMessageBox(errorMessage);
+            }
+
+            try
+            {
+                string fileLocation = automaton.WriteToFile();
+                DisplayMessageBox("Your automaton was saved at: \n\n" + fileLocation);
+            }
+            catch (IOException)
+            {
+                string errorMessage = "Something went wrong with writing the automaton to a file!";
+                DisplayMessageBox(errorMessage);
+            }
         }
 
         private void RbSelectFile_Checked(object sender, RoutedEventArgs e)
@@ -327,7 +344,7 @@ namespace ALE2_2211082_ThomasVanIersel
             lbWordTesting.Items.Add("Word:\t\tAccepted:\tFrom file:");
         }
 
-        private void DisplayErrorMessage(string message)
+        private void DisplayMessageBox(string message)
         {
             System.Windows.MessageBox.Show(message, "Error!");
         }

@@ -24,7 +24,7 @@ namespace ALE2_2211082_ThomasVanIersel
 
         public Automaton(string alphabet, List<State> states, List<Transition> transitions)
         {
-            Alphabet = alphabet ?? throw new ArgumentNullException(nameof(alphabet));
+            Alphabet = string.Concat(alphabet.OrderBy(c => c)) ?? throw new ArgumentNullException(nameof(alphabet));
             States = states ?? throw new ArgumentNullException(nameof(states));
             Transitions = transitions ?? throw new ArgumentNullException(nameof(transitions));
         }
@@ -152,7 +152,7 @@ namespace ALE2_2211082_ThomasVanIersel
         /// <summary>
         /// Writes the Automaton to a text file in the directory where the application is running.
         /// </summary>
-        public void WriteToFile()
+        public string WriteToFile()
         {
             // Create a new unique datetimeSeed to act as a filename each time a new helper is created.
             string datetimeSeed = Utilities.CreateDatetimeSeed();
@@ -222,6 +222,8 @@ namespace ALE2_2211082_ThomasVanIersel
                 else
                     tw.WriteLine("dfa:n");
             }
+
+            return txtFilePath;
         }
 
         #endregion

@@ -35,11 +35,25 @@ namespace ALE2_2211082_ThomasVanIersel
         {
             foreach (char c in second)
             {
-                if ((char.IsLetter(c) || c == '_') && first.Contains(c) == false)
+                if (first.Contains(c) == false)
                     first += c;
             }
 
             return first;
+        }
+
+        /// <summary>
+        /// Returns the unique alphabetical characters of a string.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string GetUniqueChars(string input)
+        {
+            Regex reg = new Regex("[^a-zA-Z'_]");
+            string result = string.Empty;
+            input = reg.Replace(input, string.Empty);
+            
+            return string.Concat(input.OrderBy(c => c).Distinct());
         }
 
         /// <summary>

@@ -84,6 +84,8 @@ namespace ALE2_2211082_ThomasVanIersel
             }
 
             // Take all the unique letters from the right and left parts of the RE and add them together to form the Automaton's alphabet.
+            leftOperand = Utilities.GetUniqueChars(leftOperand);
+            rightOperand = Utilities.GetUniqueChars(rightOperand);
             string alphabet = Utilities.AddUniqueCharsToString(leftOperand, rightOperand);
             // Set up the lists of states and transitions.
             List<State> states = new List<State>()
@@ -178,6 +180,8 @@ namespace ALE2_2211082_ThomasVanIersel
             }
 
             // Take all the unique letters from the right and left parts of the RE and add them together to form the Automaton's alphabet.
+            leftOperand = Utilities.GetUniqueChars(leftOperand);
+            rightOperand = Utilities.GetUniqueChars(rightOperand);
             string alphabet = Utilities.AddUniqueCharsToString(leftOperand, rightOperand);
             // Set up the lists of states and transitions.
             List<State> states = new List<State>()
@@ -262,6 +266,7 @@ namespace ALE2_2211082_ThomasVanIersel
             }
 
             // Take all the unique letters from the RE and store it as the alphabet for the Automaton.
+            operand = Utilities.GetUniqueChars(operand);
             string alphabet = Utilities.AddUniqueCharsToString("", operand);
             // Set up the lists of states and transitions.
             List<State> states = new List<State>()
@@ -308,6 +313,7 @@ namespace ALE2_2211082_ThomasVanIersel
         private static Automaton CreateSingleSymbolAutomaton(string input, ref int stateCounter, State firstState, State lastState)
         {
             // Take the symbol and store it as the Automaton's alphabet.
+            input = Utilities.GetUniqueChars(input);
             string alphabet = Utilities.AddUniqueCharsToString("", input);
             // Set up the lists of states and transitions.
             List<State> states = new List<State>()
@@ -333,11 +339,7 @@ namespace ALE2_2211082_ThomasVanIersel
         {
             automatonToAdd.States.ForEach(s => automaton.States.Add(s));
             automatonToAdd.Transitions.ForEach(t => automaton.Transitions.Add(t));
-            foreach (char c in automatonToAdd.Alphabet)
-            {
-                if (automaton.Alphabet.Contains(c) == false)
-                    automaton.Alphabet += c;
-            }
+            automaton.Alphabet = Utilities.AddUniqueCharsToString(automaton.Alphabet, automatonToAdd.Alphabet);
         }
 
         /// <summary>
