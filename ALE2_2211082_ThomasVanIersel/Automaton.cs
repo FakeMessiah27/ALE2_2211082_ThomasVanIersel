@@ -32,6 +32,199 @@ namespace ALE2_2211082_ThomasVanIersel
         #endregion
         #region ------------------------------------ METHODS -------------------------------------
 
+        /// <summary>
+        /// Checks if an automaton is finite.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsFinite()
+        {
+            // DFA's are never finite.
+            if (this.IsDFA())
+                return false;
+            
+            List<State> visitedStates = new List<State>();
+            bool hasNoLoops = true;
+
+            HasNoLoops(States.First(), visitedStates, ref hasNoLoops);
+            
+            return hasNoLoops;
+        }
+
+        /// <summary>
+        /// Checks if an automaton has any loops.
+        /// </summary>
+        /// <param name="currentState"></param>
+        /// <param name="visitedStates"></param>
+        /// <param name="hasNoLoops">Boolean value that contains the outcome. Will be set to false if any loops were detected.
+        /// Is left unchanged otherwise. Must always be provided as a true value for first call.</param>
+        private void HasNoLoops(State currentState, List<State> visitedStates, ref bool hasNoLoops)
+        {
+            List<State> visitedStatesCopy = visitedStates.ToList();
+            visitedStatesCopy.Add(currentState);
+
+            foreach (Transition t in Transitions.Where(t => t.FirstState == currentState))
+            {
+                if (visitedStatesCopy.Contains(t.SecondState))
+                {
+                    if (t.SecondState.IsFinal == false)
+                        hasNoLoops = false;
+                    else if(t.FirstState == t.SecondState)
+                        hasNoLoops = false;
+
+                    return;
+                }
+                
+                HasNoLoops(t.SecondState, visitedStatesCopy, ref hasNoLoops);
+            }
+        }
+
+        /// <summary>
+        /// Gets all the possible words that can be formed with this automaton.
+        /// This method assumes the automaton is finite and therefore has no loops!
+        /// </summary>
+        /// <returns>A list of unique words that can be formed with this automaton.</returns>
+        public List<string> GetFiniteWords()
+        {
+            List<string> finiteWords = new List<string>();
+            GetAllFiniteWords(States.First(), ref finiteWords);
+
+            return finiteWords.Distinct().ToList();
+        }
+
+        /// <summary>
+        /// Recursively runs through the automaton, recording all the possible words that can be formed.
+        /// </summary>
+        /// <param name="currentState"></param>
+        /// <param name="words"></param>
+        /// <param name="currentWord"></param>
+        private void GetAllFiniteWords(State currentState, ref List<string> words, string currentWord = "")
+        {
+            foreach (Transition t in Transitions.Where(t => t.FirstState == currentState))
+            {
+                string newWord = currentWord + t.Label;
+
+                if (t.SecondState.IsFinal)
+                {
+                    words.Add(newWord);
+                }
+
+                GetAllFiniteWords(t.SecondState, ref words, newWord);
+            }
+        }
+
+        /// <summary>
+        /// Attemps to find the next transition that is not an epsilon. This is used to find an alternative to an epsilon transition.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="visitedStates"></param>
+        /// <returns></returns>
+        private List<Transition> FindNextNonEpsilonTransitions(State s, ref List<State> visitedStates)
+        {
+            List<Transition> nextNonEpsilonTransitions = new List<Transition>();
+            visitedStates.Add(s);
+
+            foreach (Transition t in Transitions.Where(t => t.FirstState == s))
+            {
+                if (visitedStates.Contains(t.SecondState))
+                    continue;
+                if (t.Label != "_")
+                {
+                    nextNonEpsilonTransitions.Add(t);
+                    continue;
+                }
+
+                nextNonEpsilonTransitions.AddRange(FindNextNonEpsilonTransitions(t.SecondState, ref visitedStates));
+            }
+
+            return nextNonEpsilonTransitions.Distinct().ToList();
+        }
+
+        /// <summary>
+        /// Removes all epsilon transitions from the automaton, while keeping the functional outcomes the same.
+        /// It does so by finding alternatives for each epsilon transition.
+        /// </summary>
+        public void RemoveEpsilonTransitions()
+        {
+            var epsilonTransitions = Transitions.Where(t => t.Label == "_").ToList();
+            List<Transition> newTransitions = new List<Transition>();
+
+            foreach (var t in epsilonTransitions)
+            {
+                var startingState = t.FirstState;
+                var transitionsToAndFromStartingState = Transitions.Where(tr => tr.FirstState == startingState || tr.SecondState == startingState).ToList();
+                var visitedStates = new List<State>();
+                var nextNonEpsilonTransitions = FindNextNonEpsilonTransitions(t.SecondState, ref visitedStates);
+
+                foreach (var nonEpsilonTransition in nextNonEpsilonTransitions)
+                {
+                    if (transitionsToAndFromStartingState.Contains(nonEpsilonTransition) == false)
+                    {
+                        var newTransition = new Transition(nonEpsilonTransition.FirstState, nonEpsilonTransition.SecondState, nonEpsilonTransition.Label);
+                        newTransition.FirstState = startingState;
+
+                        if (TransitionIsNotDuplicate(newTransitions, newTransition))
+                            newTransitions.Add(newTransition);
+                    }
+                }
+            }
+
+            foreach (var t in epsilonTransitions)
+                Transitions.Remove(t);
+
+            Transitions.AddRange(newTransitions);
+
+            RemoveUnreachableStates();
+            RemoveTransitionsWithoutStart();
+        }
+
+        /// <summary>
+        /// Checks if a newly created transition is a duplicate of an existing one that a State already has.
+        /// </summary>
+        /// <param name="transitions"></param>
+        /// <param name="newTransition"></param>
+        /// <returns></returns>
+        private bool TransitionIsNotDuplicate(List<Transition> transitions, Transition newTransition)
+        {
+            foreach (Transition t in transitions)
+            {
+                if (t.FirstState == newTransition.FirstState && t.SecondState == newTransition.SecondState && t.Label == newTransition.Label)
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Removes states that can no longer be reached after epsilon removal has occured.
+        /// </summary>
+        private void RemoveUnreachableStates()
+        {
+            for (int i = States.Count - 1; i >= 1; i--)
+            {
+                var transitionsToState = Transitions.Where(t => t.SecondState == States[i]).ToList();
+
+                if (transitionsToState.Count == 0)
+                    States.RemoveAt(i);
+            }
+        }
+
+        /// <summary>
+        /// Removes transitions who's starting states are no longer a part of the automaton, after epsilon removal has occured.
+        /// </summary>
+        private void RemoveTransitionsWithoutStart()
+        {
+            for (int i = Transitions.Count - 1; i >= 0; i--)
+            {
+                if (States.Contains(Transitions[i].FirstState) == false)
+                    Transitions.RemoveAt(i);
+            }
+        }
+
+        /// <summary>
+        /// Tests if the automaton is a DFA. A DFA is an automaton that, for each state, has one and only one outgoing
+        /// transition. One for each letter of the alphabet.
+        /// </summary>
+        /// <returns></returns>
         public bool IsDFA()
         {
             // DFA's can't have an empty transition, so that's an easy first check.

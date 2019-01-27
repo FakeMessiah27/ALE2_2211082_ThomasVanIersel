@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media;
 
 namespace ALE2_2211082_ThomasVanIersel
 {
@@ -13,6 +14,7 @@ namespace ALE2_2211082_ThomasVanIersel
     public partial class MainWindow : Window
     {
         GraphvizHelper gh;
+        Automaton originalAutomaton;
         Automaton automaton;
 
         Dictionary<string, bool> testWords;
@@ -26,7 +28,7 @@ namespace ALE2_2211082_ThomasVanIersel
             gh = new GraphvizHelper();
             
             // Currently hard-coding file location for ease of testing.
-            selectedFilePath = Directory.GetCurrentDirectory() + @"\Automaton Files\a3.txt";
+            selectedFilePath = Directory.GetCurrentDirectory() + @"\Automaton Files\a6.txt";
             SetSelectedFileLabel();
             SetupListBox();
         }
@@ -44,7 +46,7 @@ namespace ALE2_2211082_ThomasVanIersel
                         SetupListBox();
 
                         // Do nothing if the path isn't set.
-                        if (String.IsNullOrWhiteSpace(selectedFilePath))
+                        if (string.IsNullOrWhiteSpace(selectedFilePath))
                             return;
 
                         try
@@ -58,6 +60,9 @@ namespace ALE2_2211082_ThomasVanIersel
 
                             return;
                         }
+
+                        originalAutomaton = new Automaton(automaton.Alphabet, automaton.States.ToList(), automaton.Transitions.ToList());
+                        automaton.RemoveEpsilonTransitions();
 
                         Dictionary<string, bool> testedWords = AutomatonUtilities.CheckTestWords(testWords.Keys.ToList(), automaton);
                         foreach (var pair in testedWords)
@@ -82,6 +87,7 @@ namespace ALE2_2211082_ThomasVanIersel
                         regularExpression = regularExpression.Replace(" ", "");
 
                         automaton = ReadRegularExpression(regularExpression);
+                        originalAutomaton = new Automaton(automaton.Alphabet, automaton.States, automaton.Transitions);
 
                         if (automaton == null)
                         {
@@ -103,24 +109,9 @@ namespace ALE2_2211082_ThomasVanIersel
                 return;
             }
 
-            lblIsDFA.Content = automaton.IsDFA() ? "Yes" : "No";
-            lblIsDFA.Visibility = Visibility.Visible;
-
-            // Use the GraphvizHelper object to generate the graph and display it in the ui.
-            bool graphCreated = gh.CreateGraph(automaton);
-
-            if (graphCreated == true)
-            {
-                // Apply the created .png file to the image element as a bitmap.
-                graph.Source = gh.GetBitmapFromPng();
-            }
-            else
-            {
-                // If the graph was not created successfully, the system could not find GraphViz' "dot.exe".
-                string errorMessage = "Couldn't find GraphViz' \"dot.exe\"! Please ensure you have it installed on your computer and have your PATH variables set up correctly.\n\n" +
-                    "Alternatively, use the button on the Graph tab to set the path to your GraphViz  \"dot.exe\".";
-                DisplayMessageBox(errorMessage);
-            }
+            CheckIfDFA();
+            CheckForInfinity();
+            CreateGraph();
 
             if (automaton != null)
                 btnWriteToFile.IsEnabled = true;
@@ -166,7 +157,7 @@ namespace ALE2_2211082_ThomasVanIersel
             string word = tbTestWord.Text;
             bool isAccepted = automaton.IsAcceptedWord(word, automaton.States.First());
 
-            lbWordTesting.Items.Insert(1, String.Format("{0}\t\t{1}\t\tN/A",
+            lbWordTesting.Items.Insert(1, string.Format("{0}\t\t{1}\t\tN/A",
                     word,
                     isAccepted ? "Y" : "N"));
         }
@@ -347,6 +338,54 @@ namespace ALE2_2211082_ThomasVanIersel
         private void DisplayMessageBox(string message)
         {
             System.Windows.MessageBox.Show(message, "Error!");
+        }
+
+        /// <summary>
+        /// Checks if the automaton is a DFA and updates the appropriate UI elements with the result.
+        /// </summary>
+        private void CheckIfDFA()
+        {
+            lblIsDFA.Content = automaton.IsDFA() ? "Yes" : "No";
+            lblIsDFA.Visibility = Visibility.Visible;
+        }
+
+        /// <summary>
+        /// Checks if the automaton has a finite number of words. If so, it will display these words in a listbox.
+        /// </summary>
+        private void CheckForInfinity()
+        {
+            if (automaton.IsFinite())
+            {
+                lblIsFinite.Content = "Yes";
+                lblIsFinite.Background = new SolidColorBrush(Colors.LimeGreen);
+
+                var finiteWords = automaton.GetFiniteWords();
+                foreach (string word in finiteWords)
+                    lbFiniteWords.Items.Add(word);
+            }
+            lblIsFinite.Visibility = Visibility.Visible;
+        }
+
+        /// <summary>
+        /// Creates the graph picture of the automaton, using GraphViz.
+        /// </summary>
+        private void CreateGraph()
+        {
+            // Use the GraphvizHelper object to generate the graph and display it in the ui.
+            bool graphCreated = gh.CreateGraph(originalAutomaton);
+
+            if (graphCreated == true)
+            {
+                // Apply the created .png file to the image element as a bitmap.
+                graph.Source = gh.GetBitmapFromPng();
+            }
+            else
+            {
+                // If the graph was not created successfully, the system could not find GraphViz' "dot.exe".
+                string errorMessage = "Couldn't find GraphViz' \"dot.exe\"! Please ensure you have it installed on your computer and have your PATH variables set up correctly.\n\n" +
+                    "Alternatively, use the button on the Graph tab to set the path to your GraphViz  \"dot.exe\".";
+                DisplayMessageBox(errorMessage);
+            }
         }
 
         #endregion
