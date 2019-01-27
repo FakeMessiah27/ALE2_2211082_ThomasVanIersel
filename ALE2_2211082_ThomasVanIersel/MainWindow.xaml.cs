@@ -196,8 +196,7 @@ namespace ALE2_2211082_ThomasVanIersel
             recRegularExpression.Visibility = Visibility.Visible;
             executionType = ExecutionType.RegularExpression;
         }
-
-
+        
         #endregion
         #region ------------------------------------ METHODS --------------------------------------
 
@@ -357,11 +356,15 @@ namespace ALE2_2211082_ThomasVanIersel
             if (automaton.IsFinite())
             {
                 lblIsFinite.Content = "Yes";
-                lblIsFinite.Background = new SolidColorBrush(Colors.LimeGreen);
 
                 var finiteWords = automaton.GetFiniteWords();
                 foreach (string word in finiteWords)
                     lbFiniteWords.Items.Add(word);
+            }
+            else
+            {
+                lblIsFinite.Content = "No";
+                lbFiniteWords.Items.Clear();
             }
             lblIsFinite.Visibility = Visibility.Visible;
         }
