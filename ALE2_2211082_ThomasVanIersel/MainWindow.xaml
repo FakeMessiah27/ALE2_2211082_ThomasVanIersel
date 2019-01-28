@@ -25,12 +25,22 @@
             </TabItem>
             <TabItem x:Name="tabItemGraph" Header="Graph" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="54" Margin="-3,0,0,0">
                 <Grid Background="LightBlue">
-                    <local:ZoomBorder x:Name="border" ClipToBounds="True">
-                        <Image x:Name="graph" Height="359" Margin="0,30,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="525"/>
+                    <local:ZoomBorder x:Name="borderMainGraph" ClipToBounds="True">
+                        <Image x:Name="graph" Height="328" Margin="0,30,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="584"/>
                     </local:ZoomBorder>
                     <Label x:Name="lblGraph" Content="Graph:" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Height="26" Width="45"/>
                     <Label Content="Help" HorizontalAlignment="Left" Margin="261,0,0,0" VerticalAlignment="Top" Height="26" Width="35" ToolTip="Use scroll wheel to zoom, left click and drag to pan, right click to reset."/>
                     <Button x:Name="btnSetPath" Content="Set GraphViz path" HorizontalAlignment="Left" Margin="431,3,0,0" VerticalAlignment="Top" Width="104" Height="23" Click="BtnSetDotPath_Click"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Powerset Construction" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Margin="-4,0,0,0">
+                <Grid Background="LightBlue">
+                    <local:ZoomBorder x:Name="borderPCGraph" ClipToBounds="True">
+                        <Image x:Name="pcGraph" Height="328" Margin="0,30,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="584"/>
+                    </local:ZoomBorder>
+                    <Label Content="Convert an NFA to a DFA:" HorizontalAlignment="Left" Margin="10,2,0,0" VerticalAlignment="Top" Height="26" ToolTip="Use scroll wheel to zoom, left click and drag to pan, right click to reset."/>
+                    <Button x:Name="btnConvertToDfa" Content="Convert" HorizontalAlignment="Left" Margin="159,3,0,0" VerticalAlignment="Top" Width="73" Height="23" Click="BtnConvertToDfa_Click"/>
+                    <Button x:Name="btnWriteDFAToFile" Content="Write to file" HorizontalAlignment="Left" Margin="266,3,0,0" VerticalAlignment="Top" Width="78" Height="23" Click="BtnWriteDFAToFile_Click" IsEnabled="false"/>
                 </Grid>
             </TabItem>
         </TabControl>
@@ -68,7 +78,5 @@
             <RadioButton x:Name="rbRegularExpression" Content="" HorizontalAlignment="Right" Margin="0,3,2,0" VerticalAlignment="Top" Width="15" Checked="RbRegularExpression_Checked" />
             <RadioButton x:Name="rbSelectFile" HorizontalAlignment="Left" Margin="2,3,0,0" VerticalAlignment="Top" Grid.Column="1" Width="14" Checked="RbSelectFile_Checked" IsChecked="True"/>
         </Grid>
-
-
     </Grid>
 </Window>

@@ -16,6 +16,7 @@ namespace ALE2_2211082_ThomasVanIersel
         GraphvizHelper gh;
         Automaton originalAutomaton;
         Automaton automaton;
+        Automaton newDFA;
 
         Dictionary<string, bool> testWords;
         string selectedFilePath;
@@ -37,6 +38,9 @@ namespace ALE2_2211082_ThomasVanIersel
 
         private void BtnExecute_Click(object sender, RoutedEventArgs e)
         {
+            btnWriteDFAToFile.IsEnabled = false;
+            pcGraph.Source = null;
+
             switch (executionType)
             {
                 case ExecutionType.SelectFile:
@@ -45,7 +49,7 @@ namespace ALE2_2211082_ThomasVanIersel
                         testWords = new Dictionary<string, bool>();
                         SetupListBox();
 
-                        // Do nothing if the path isn't set.
+                        // Do nothing if the file path isn't set.
                         if (string.IsNullOrWhiteSpace(selectedFilePath))
                             return;
 
@@ -61,9 +65,15 @@ namespace ALE2_2211082_ThomasVanIersel
                             return;
                         }
 
+                        // Save the original automaton as it was read from the file. This will be used to draw the graph.
                         originalAutomaton = new Automaton(automaton.Alphabet, automaton.States.ToList(), automaton.Transitions.ToList());
+                        // Remove all epsilon transitions from the automaton. This new version of the automaton, which is still functionally the same
+                        // as the original, will be used for further computations under the hood. This is done because it removes the 
+                        // difficulty of detecting and dealing with loops that consist of nothing but epsilons. No epsilons, no epsilon loops.
                         automaton.RemoveEpsilonTransitions();
 
+                        // Run through all the test words that were included in the file, indicating for each if the automaton accepts it or not,
+                        // and if the file indicates if the automaton SHOULD accept it not.
                         Dictionary<string, bool> testedWords = AutomatonUtilities.CheckTestWords(testWords.Keys.ToList(), automaton);
                         foreach (var pair in testedWords)
                         {
@@ -86,6 +96,7 @@ namespace ALE2_2211082_ThomasVanIersel
                         // Remove spaces.
                         regularExpression = regularExpression.Replace(" ", "");
 
+                        // Save the original automaton as it was read from the file. This will be used to draw the graph.
                         automaton = ReadRegularExpression(regularExpression);
                         originalAutomaton = new Automaton(automaton.Alphabet, automaton.States, automaton.Transitions);
 
@@ -109,9 +120,12 @@ namespace ALE2_2211082_ThomasVanIersel
                 return;
             }
 
-            CheckIfDFA();
-            CheckForInfinity();
-            CreateGraph();
+            // Check if the automaton is a Deterministic Finite Automaton.
+            CheckIfDFA(automaton);
+            // Check if the automaton has a finite number of words, and if so, list them.
+            CheckForInfinity(automaton);
+            // Create a PNG graph of the automaton and show it.
+            CreateGraph(originalAutomaton);
 
             if (automaton != null)
                 btnWriteToFile.IsEnabled = true;
@@ -174,6 +188,35 @@ namespace ALE2_2211082_ThomasVanIersel
             try
             {
                 string fileLocation = automaton.WriteToFile();
+                DisplayMessageBox("Your automaton was saved at: \n\n" + fileLocation);
+            }
+            catch (IOException)
+            {
+                string errorMessage = "Something went wrong with writing the automaton to a file!";
+                DisplayMessageBox(errorMessage);
+            }
+        }
+
+        private void BtnConvertToDfa_Click(object sender, RoutedEventArgs e)
+        {
+            newDFA = AutomatonUtilities.ConvertNFAtoDFA(automaton);
+
+            CreateGraph(newDFA, true);
+            btnWriteDFAToFile.IsEnabled = true;
+        }
+
+        private void BtnWriteDFAToFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (newDFA == null)
+            {
+                // If the new DFA was not created, show an error message.
+                string errorMessage = "No automaton found, please click the convert button first.";
+                DisplayMessageBox(errorMessage);
+            }
+
+            try
+            {
+                string fileLocation = newDFA.WriteToFile(testWords);
                 DisplayMessageBox("Your automaton was saved at: \n\n" + fileLocation);
             }
             catch (IOException)
@@ -334,6 +377,10 @@ namespace ALE2_2211082_ThomasVanIersel
             lbWordTesting.Items.Add("Word:\t\tAccepted:\tFrom file:");
         }
 
+        /// <summary>
+        /// Displays a standard Windows Forms message box with the provided message and "Error!" as the title.
+        /// </summary>
+        /// <param name="message"></param>
         private void DisplayMessageBox(string message)
         {
             System.Windows.MessageBox.Show(message, "Error!");
@@ -342,27 +389,40 @@ namespace ALE2_2211082_ThomasVanIersel
         /// <summary>
         /// Checks if the automaton is a DFA and updates the appropriate UI elements with the result.
         /// </summary>
-        private void CheckIfDFA()
+        private void CheckIfDFA(Automaton a)
         {
-            lblIsDFA.Content = automaton.IsDFA() ? "Yes" : "No";
+            bool isDFA = a.CheckIfDFA();
+
+            if (isDFA)
+            {
+                a.IsDFA = true;
+                lblIsDFA.Content = "Yes";
+            }
+            else
+            {
+                a.IsDFA = false;
+                lblIsDFA.Content = "No";
+            }
             lblIsDFA.Visibility = Visibility.Visible;
         }
 
         /// <summary>
         /// Checks if the automaton has a finite number of words. If so, it will display these words in a listbox.
         /// </summary>
-        private void CheckForInfinity()
+        private void CheckForInfinity(Automaton a)
         {
-            if (automaton.IsFinite())
+            if (a.CheckIfFinite())
             {
+                a.IsFinite = true;
                 lblIsFinite.Content = "Yes";
 
-                var finiteWords = automaton.GetFiniteWords();
+                var finiteWords = a.GetFiniteWords();
                 foreach (string word in finiteWords)
                     lbFiniteWords.Items.Add(word);
             }
             else
             {
+                a.IsFinite = false;
                 lblIsFinite.Content = "No";
                 lbFiniteWords.Items.Clear();
             }
@@ -372,15 +432,18 @@ namespace ALE2_2211082_ThomasVanIersel
         /// <summary>
         /// Creates the graph picture of the automaton, using GraphViz.
         /// </summary>
-        private void CreateGraph()
+        private void CreateGraph(Automaton a, bool isDFAConversion = false)
         {
             // Use the GraphvizHelper object to generate the graph and display it in the ui.
-            bool graphCreated = gh.CreateGraph(originalAutomaton);
+            bool graphCreated = gh.CreateGraph(a);
 
             if (graphCreated == true)
             {
                 // Apply the created .png file to the image element as a bitmap.
-                graph.Source = gh.GetBitmapFromPng();
+                if (isDFAConversion)
+                    pcGraph.Source = gh.GetBitmapFromPng();
+                else
+                    graph.Source = gh.GetBitmapFromPng();
             }
             else
             {

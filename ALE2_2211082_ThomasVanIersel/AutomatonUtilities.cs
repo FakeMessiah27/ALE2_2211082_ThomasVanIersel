@@ -402,5 +402,90 @@ namespace ALE2_2211082_ThomasVanIersel
 
             return result;
         }
+
+        /// <summary>
+        /// Converts a Non-deterministic Automaton to a Deterministic Automaton (NFA to DFA) using the Powerset Construction.
+        /// Based on algorithm by Mitja Bezensek (http://bezensek.com/blog/2015/04/30/powerset-construction/).
+        /// </summary>
+        /// <param name="nfa"></param>
+        /// <returns></returns>
+        public static Automaton ConvertNFAtoDFA(Automaton nfa)
+        {
+            // Prepare the variables that will be used to create the new DFA.
+            var nfaFinalStates = nfa.States.Where(s => s.IsFinal).ToList();
+            var states = new List<State>();
+            var alphabet = nfa.Alphabet;
+            var transitions = new List<Transition>();
+            State sinkState = new State("Sink");
+
+            // Prepare two variables to keep track of where we've been in the automaton.
+            var processed = new List<State>();
+            var queue = new Queue<State>();
+            // Enqueue the first (starting) state of the NFA.
+            queue.Enqueue(nfa.States.First());
+
+            // Keep repeating the loop as long as there are states that still need processing.
+            while (queue.Count > 0)
+            {
+                // Get the next state that needs to be processed from the queue, and add it to both the processed States
+                // list, as well as the list of states that will be used to create the DFA.
+                var setState = queue.Dequeue();
+                processed.Add(setState);
+                states.Add(setState);
+                
+                // In case this state is already a combination of multiple states from the original NFA, split them up again
+                // into separate states.
+                List<State> statesInCurrentSetState = new List<State>();
+                foreach (string str in setState.StateName.Split('-'))
+                    statesInCurrentSetState.Add(new State(str));
+
+                // If any of the states that will become part of the new set of states is a final state, 
+                // this set of states will also be a final state.
+                foreach (var state in statesInCurrentSetState)
+                {
+                    if (nfaFinalStates.Select(s => s.StateName).Contains(state.StateName))
+                    {
+                        state.IsFinal = true;
+                        break;
+                    }
+                }
+
+                // Get the labels of all outgoing transitions from any of the states in this set of states.
+                List<string> labels = nfa.Transitions.Where(t => statesInCurrentSetState.Select(s => s.StateName).Contains(t.FirstState.StateName))
+                    .Select(t => t.Label).Distinct().ToList();
+                foreach (var label in labels)
+                {
+                    // For all the states in the set of states that is currently under consideration, we need to get all the states
+                    // that can be reached via a transition that has this label.
+                    var reachableStates = nfa.Transitions.Where(t => t.Label == label && statesInCurrentSetState.Select(s => s.StateName)
+                        .Contains(t.FirstState.StateName)).OrderBy(t => t.SecondState.StateName).Select(t => t.SecondState).ToList();
+
+                    // These states that can be reached will become a new set of states.
+                    var reachableSetState = new State(string.Join("-", reachableStates.Select(t => t.StateName)));
+                    // If any of the states that comprimise the new set of states is final, the whole set of states is also final.
+                    reachableSetState.IsFinal = reachableStates.Any(s => s.IsFinal);
+
+                    // Add a new transition going from the current set of states to the new set of states.
+                    transitions.Add(new Transition(setState, reachableSetState, label));
+
+                    // If the newly created set of states has not yet been processed (via a different route in the automaton),
+                    // put it in the queue.
+                    if (!processed.Select(s => s.StateName).Contains(reachableSetState.StateName))
+                        queue.Enqueue(reachableSetState);
+                }
+
+                // A DFA needs one outgoing transition for EVERY letter in the automaton's alphabet. Therefore, for any letters that did not have
+                // an outgoing transition from the current set of states, we will need to add a transition going to the sink state (the dead-end).
+                var unusedLetters = alphabet.Where(str => !labels.Contains(str.ToString()));
+                foreach (var unusedLetter in unusedLetters)
+                {
+                    transitions.Add(new Transition(setState, sinkState, unusedLetter.ToString()));
+                }
+            }
+
+            // Add the sink state, create and return the new DFA.
+            states.Add(sinkState);
+            return new Automaton(alphabet, states, transitions);
+        }
     }
 }
