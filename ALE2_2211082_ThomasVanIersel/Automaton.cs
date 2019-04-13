@@ -16,17 +16,19 @@ namespace ALE2_2211082_ThomasVanIersel
         public List<Transition> Transitions { get; set; }
         public bool IsDFA { get; set; }
         public bool IsFinite { get; set; }
+        public bool IsPDA { get; set; }
+        public string Stack { get; set; }
 
         #endregion
         #region --------------------------------- CONSTRUCTORS -----------------------------------
-
-        public Automaton() { }
-
-        public Automaton(string alphabet, List<State> states, List<Transition> transitions)
+        
+        public Automaton(string alphabet, List<State> states, List<Transition> transitions, bool isPDA = false, string stack = "")
         {
             Alphabet = string.Concat(alphabet.OrderBy(c => c)) ?? throw new ArgumentNullException(nameof(alphabet));
             States = states ?? throw new ArgumentNullException(nameof(states));
             Transitions = transitions ?? throw new ArgumentNullException(nameof(transitions));
+            IsPDA = isPDA;
+            Stack = stack;
         }
 
         #endregion
@@ -382,6 +384,79 @@ namespace ALE2_2211082_ThomasVanIersel
         }
 
         /// <summary>
+        /// Resursively tests if a given word is accepted by a Push-down automaton.
+        /// </summary>
+        /// <param name="word">Word to be tested</param>
+        /// <param name="currentState">Current state in the automaton. Should be the first state when the method is first called.</param>
+        /// <param name="stack">The current stack.</param>
+        /// <returns></returns>
+        public bool IsAcceptedWord(string word, State currentState, Stack<string> stack)
+        {
+            // See what the next symbol would be, if we pop it.
+            string stackPopSymbol = "";
+            if (stack.Count > 0)
+                stackPopSymbol = stack.Peek();
+
+            // If the current word is still bigger than 0, we have letters left to check, therefore continue.
+            if (word.Length > 0)
+            {
+                // Get the possible outbound transitions from the current state with the first letter of the remainder of the word as the label, as well as the correct pop symbol.
+                var possibleTransitions = GetPossibleTransitions(currentState, word[0].ToString(), stackPopSymbol);
+
+                // If there's only one possible transition, follow it.
+                if (possibleTransitions.Count() == 1)
+                {
+                    return ProcessNextTransition(word, possibleTransitions.First(), stack);
+                }
+                else if (possibleTransitions.Count() > 1)
+                {
+                    // If there are multiple possible transitions, we need to determine which one to take based on a set of priority rules.
+                    Dictionary<int, Transition> transitionPriorities = GetTransitionPriorities(possibleTransitions, word[0].ToString(), stackPopSymbol);
+                    int counter = 0;
+                    // Loop once for every priority level and see if one of the possible transitions matches it. 
+                    // The counter counts upwards, meaning a priority 1 transition will be picked first and a priority 4 will be picked last.
+                    while (counter < 4)
+                    {
+                        // See if one of the possible transitions has the priority level of the current counter. If not, we'll continue on to the next priority level.
+                        if (transitionPriorities.TryGetValue(++counter, out Transition nextTransition) == false)
+                            continue;
+
+                        // Process the next transition.
+                        // (This will call back to the IsAcceptedWord method, in a recursive pattern.)
+                        return ProcessNextTransition(word, nextTransition, stack);
+                    }
+                }
+                else // If no possible transitions could be found but we still have letters left, it means the word is not accepted, so we return false.
+                    return false;
+            }
+
+            // If all the letters of the word have been consumed, we check if the state that we ended up in was a final state.
+            // We also check if the stack is empty. Only if both of these conditions are met, is the word accepted by the PDA.
+            if (currentState.IsFinal && stack.Count() == 0)
+                return true;
+
+            // If either the current state is not yet a final state or if we still have symbols on the stack,
+            // we can try to find an epsilon transition that might allow us to continue to a different state, or that may pop a symbol of the stack.
+            // Afterwards, we can once again check if the success conditions are met (in the next recursive call).
+            List<Transition> possibleEpsilonTransitions = GetPossibleEpsilonTransitions(currentState, stackPopSymbol);
+            if (possibleEpsilonTransitions.Count() != 0)
+            {
+                Dictionary<int, Transition> transitionPriorities = GetTransitionPriorities(possibleEpsilonTransitions, "_", stackPopSymbol);
+                int counter = 0;
+                while (counter < 4)
+                {
+                    if (transitionPriorities.TryGetValue(++counter, out Transition nextTransition) == false)
+                        continue;
+
+                    return ProcessNextTransition(word, nextTransition, stack);
+                }
+            }
+
+            // If no further transitions could be taken and the success condition above was not met, the word is not accepted.
+            return false;
+        }
+
+        /// <summary>
         /// Returns all possible transitions from a given state with a given label.
         /// </summary>
         /// <param name="state"></param>
@@ -400,6 +475,99 @@ namespace ALE2_2211082_ThomasVanIersel
         public List<Transition> GetPossibleEpsilonTransitions(State state)
         {
             return Transitions.Where(t => t.FirstState == state && t.Label == "_").ToList();
+        }
+        
+        /// <summary>
+        /// Returns all possible transitions from a given state, with a given symbol and the correct pop symbol.
+        /// Only intended for us with PDA's.
+        /// </summary>
+        /// <param name="state"></param>
+        /// <param name="label"></param>
+        /// <param name="stackPopSymbol"></param>
+        /// <returns></returns>
+        private List<Transition> GetPossibleTransitions(State state, string label, string stackPopSymbol)
+        {
+            return Transitions.Where(t => t.FirstState == state
+                && (t.Label == label || t.Label == "_")
+                && (t.StackPopSymbol == stackPopSymbol || t.StackPopSymbol == "_" || string.IsNullOrWhiteSpace(t.StackPopSymbol))).ToList();
+        }
+
+        /// <summary>
+        /// Returns all possible transitions from a given state with epsilon (empty string) label, and the correct pop symbol.
+        /// Only intended for us with PDA's.
+        /// </summary>
+        /// <param name="state"></param>
+        /// <param name="stackPopSymbol"></param>
+        /// <returns></returns>
+        private List<Transition> GetPossibleEpsilonTransitions(State state, string stackPopSymbol)
+        {
+            return Transitions.Where(t => t.FirstState == state && t.Label == "_" && (t.StackPopSymbol == "_" || string.IsNullOrWhiteSpace(t.StackPopSymbol))).ToList();
+        }
+
+        /// <summary>
+        /// Processes the next transition in a PDA. It will pop off a symbol from the stack if necessary, and push a new one onto the stack if necessary.
+        /// </summary>
+        /// <param name="word"></param>
+        /// <param name="transition"></param>
+        /// <param name="stack"></param>
+        /// <returns></returns>
+        private bool ProcessNextTransition(string word, Transition transition, Stack<string> stack)
+        {
+            // If the pop symbol wasn't empty (epsilon), pop a symbol of the stack (if there are any).
+            if (transition.StackPopSymbol != "_")
+            {
+                if (stack.Count() > 0)
+                    stack.Pop();
+            }
+            // If the push symbol of the transition isn't empty (epsilon), push it onto the stack.
+            if (transition.StackPushSymbol != "_")
+                stack.Push(transition.StackPushSymbol);
+
+            // If the transition label is empty (epsilon), we need pass the entire word onto the next recursive call of IsAcceptedWord. 
+            // In other words: we don't consume any input.
+            // Otherwise, we do consume input, by passing the word minus its first letter onto the next recursive call.
+            if (transition.Label == "_")
+            {
+                if (IsAcceptedWord(word, transition.SecondState, stack))
+                    return true;
+            }
+            else
+            {
+                if (IsAcceptedWord(word.Substring(1), transition.SecondState, stack))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Evaluates a set of possible transitions, following the pre-defined priority rules.
+        /// </summary>
+        /// <param name="transitions"></param>
+        /// <param name="inputSymbol"></param>
+        /// <param name="stackPopSymbol"></param>
+        /// <returns></returns>
+        private Dictionary<int, Transition> GetTransitionPriorities(List<Transition> transitions, string inputSymbol, string stackPopSymbol)
+        {
+            Dictionary<int, Transition> transitionPriorities = new Dictionary<int, Transition>();
+
+            foreach (var t in transitions)
+            {
+                // Priority 1
+                if (t.Label == inputSymbol && t.StackPopSymbol == stackPopSymbol)
+                    transitionPriorities.Add(1, t);
+                // Priority 2
+                else if (t.Label == inputSymbol && t.StackPopSymbol == "_")
+                    transitionPriorities.Add(2, t);
+                // Priority 3
+                else if (t.Label == "_" && t.StackPopSymbol == stackPopSymbol)
+                    transitionPriorities.Add(3, t);
+                // Priority 4
+                else if (t.Label == "_" && t.StackPopSymbol == "_")
+                    transitionPriorities.Add(4, t);
+            }
+
+            return transitionPriorities;
         }
 
         /// <summary>
@@ -423,8 +591,14 @@ namespace ALE2_2211082_ThomasVanIersel
             // Write contents of the .txt file.
             using (TextWriter tw = new StreamWriter(txtFilePath))
             {
-                // Alphabet
+                // Alphabet.
                 tw.WriteLine("alphabet: " + Alphabet);
+
+                if (this.IsPDA)
+                {
+                    // Stack
+                    tw.WriteLine("stack: " + Stack);
+                }
 
                 // States.
                 string statesLine = "states: ";
@@ -433,7 +607,7 @@ namespace ALE2_2211082_ThomasVanIersel
                     statesLine += s.StateName + ",";
                 }
                 tw.WriteLine(statesLine.TrimEnd(','));
-
+                
                 // Final states.
                 string finalLine = "final: ";
                 foreach (var s in States)
@@ -450,7 +624,10 @@ namespace ALE2_2211082_ThomasVanIersel
                 // Lines for the Transitions.
                 foreach (var t in Transitions)
                 {
-                    tw.WriteLine(string.Format("{0},{1} --> {2}", t.FirstState, t.Label, t.SecondState));
+                    if (this.IsPDA)
+                        tw.WriteLine(string.Format("{0},{1} [{3},{4}] --> {2}", t.FirstState, t.Label, t.SecondState, t.StackPopSymbol, t.StackPushSymbol));
+                    else
+                        tw.WriteLine(string.Format("{0},{1} --> {2}", t.FirstState, t.Label, t.SecondState));
                 }
                 // Transitions ending.
                 tw.WriteLine("end.");

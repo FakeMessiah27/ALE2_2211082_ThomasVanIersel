@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
 
@@ -39,7 +40,10 @@ namespace ALE2_2211082_ThomasVanIersel
         private void BtnExecute_Click(object sender, RoutedEventArgs e)
         {
             btnWriteDFAToFile.IsEnabled = false;
+            btnConvertToDfa.IsEnabled = true;
+            btnRemoveEpsilons.IsEnabled = true;
             pcGraph.Source = null;
+            bool isPDA = (bool)cbPDA.IsChecked;
 
             switch (executionType)
             {
@@ -55,7 +59,14 @@ namespace ALE2_2211082_ThomasVanIersel
 
                         try
                         {
-                            automaton = ReadAutomatonFile();
+                            if (isPDA)
+                            {
+                                automaton = ReadAutomatonFile(true);
+                                btnConvertToDfa.IsEnabled = false;
+                                btnRemoveEpsilons.IsEnabled = false;
+                            }
+                            else
+                                automaton = ReadAutomatonFile();
                         }
                         catch (IOException)
                         {
@@ -64,13 +75,23 @@ namespace ALE2_2211082_ThomasVanIersel
 
                             return;
                         }
+                        catch (Exception)
+                        {
+                            string errorMessage = "Something went wrong while reading the automaton text file. Please make sure it is in the correct format.";
+                            DisplayMessageBox(errorMessage);
 
-                        // Save the original automaton as it was read from the file. This will be used to draw the graph.
-                        originalAutomaton = new Automaton(automaton.Alphabet, automaton.States.ToList(), automaton.Transitions.ToList());
-                        // Remove all epsilon transitions from the automaton. This new version of the automaton, which is still functionally the same
-                        // as the original, will be used for further computations under the hood. This is done because it removes the 
-                        // difficulty of detecting and dealing with loops that consist of nothing but epsilons. No epsilons, no epsilon loops.
-                        automaton.RemoveEpsilonTransitions();
+                            return;
+                        }
+
+                        originalAutomaton = new Automaton(automaton.Alphabet, automaton.States.ToList(), automaton.Transitions.ToList(), automaton.IsPDA);
+                        
+                        if (!isPDA)
+                        {
+                            // Remove all epsilon transitions from the automaton. This new version of the automaton, which is still functionally the same
+                            // as the original, will be used for further computations under the hood. This is done because it removes the 
+                            // difficulty of detecting and dealing with loops that consist of nothing but epsilons. No epsilons, no epsilon loops.
+                            automaton.RemoveEpsilonTransitions();
+                        }
 
                         // Run through all the test words that were included in the file, indicating for each if the automaton accepts it or not,
                         // and if the file indicates if the automaton SHOULD accept it not.
@@ -88,7 +109,7 @@ namespace ALE2_2211082_ThomasVanIersel
                 case ExecutionType.RegularExpression:
                     {
                         string regularExpression = tbRegularExpression.Text;
-                        
+
                         // Do nothing if the text box was empty.
                         if (string.IsNullOrWhiteSpace(regularExpression))
                             return;
@@ -110,7 +131,7 @@ namespace ALE2_2211082_ThomasVanIersel
                         break;
                     }
             }
-            
+
             if (automaton.Transitions.All(t => t.Label == "_"))
             {
                 // If the automaton only has epsilon transitions, it is considered invalid.
@@ -119,13 +140,17 @@ namespace ALE2_2211082_ThomasVanIersel
 
                 return;
             }
-
-            // Check if the automaton is a Deterministic Finite Automaton.
-            CheckIfDFA(automaton);
-            // Check if the automaton has a finite number of words, and if so, list them.
-            CheckForInfinity(automaton);
+            
+            if (!isPDA)
+            {
+                // Check if the automaton is a Deterministic Finite Automaton.
+                CheckIfDFA(automaton);
+                // Check if the automaton has a finite number of words, and if so, list them.
+                CheckForInfinity(automaton);
+            }
+            
             // Create a PNG graph of the automaton and show it.
-            CreateGraph(originalAutomaton);
+            CreateGraph(originalAutomaton, graph);
 
             if (automaton != null)
                 btnWriteToFile.IsEnabled = true;
@@ -169,7 +194,11 @@ namespace ALE2_2211082_ThomasVanIersel
                 return;
 
             string word = tbTestWord.Text;
-            bool isAccepted = automaton.IsAcceptedWord(word, automaton.States.First());
+            bool isAccepted = false;
+            if (!automaton.IsPDA)
+                isAccepted = automaton.IsAcceptedWord(word, automaton.States.First());
+            else
+                isAccepted = automaton.IsAcceptedWord(word, automaton.States.First(), new Stack<string>());
 
             lbWordTesting.Items.Insert(1, string.Format("{0}\t\t{1}\t\tN/A",
                     word,
@@ -201,7 +230,7 @@ namespace ALE2_2211082_ThomasVanIersel
         {
             newDFA = AutomatonUtilities.ConvertNFAtoDFA(automaton);
 
-            CreateGraph(newDFA, true);
+            CreateGraph(newDFA, pcGraph);
             btnWriteDFAToFile.IsEnabled = true;
         }
 
@@ -239,7 +268,12 @@ namespace ALE2_2211082_ThomasVanIersel
             recRegularExpression.Visibility = Visibility.Visible;
             executionType = ExecutionType.RegularExpression;
         }
-        
+
+        private void BtnRemoveEpsilons_Click(object sender, RoutedEventArgs e)
+        {
+            CreateGraph(automaton, graphNoEps);
+        }
+
         #endregion
         #region ------------------------------------ METHODS --------------------------------------
 
@@ -247,13 +281,14 @@ namespace ALE2_2211082_ThomasVanIersel
         /// Reads a text file containing an automaton. The text in the file needs to be in a specific format.
         /// </summary>
         /// <returns>A new Automaton object.</returns>
-        private Automaton ReadAutomatonFile()
+        private Automaton ReadAutomatonFile(bool isPDA = false)
         {
             // Read all lines.
-            string[] lines = System.IO.File.ReadAllLines(selectedFilePath);
+            string[] lines = File.ReadAllLines(selectedFilePath);
             
             // Prepare variables to hold data from the file.
             string alphabet = "";
+            string stack = "";
             List<State> states = new List<State>();
             List<string> finals = new List<string>();
             List<Transition> transitions = new List<Transition>();
@@ -277,6 +312,9 @@ namespace ALE2_2211082_ThomasVanIersel
                     {
                         case "alphabet":
                             alphabet = splitLine[1].Trim();
+                            break;
+                        case "stack":
+                            stack = splitLine[1].Trim();
                             break;
                         case "states":
                             splitLine[1].Split(',').Select(x => x.Trim()).ToList().ForEach(x => 
@@ -312,8 +350,24 @@ namespace ALE2_2211082_ThomasVanIersel
                     State firstState = states.Find(s => s.StateName == commaSplitLine[0]);
                     State secondState = states.Find(s => s.StateName == line.Split('>')[1].Trim());
                     string label = commaSplitLine[1].First().ToString();
+                    string stackPopSymbol = null;
+                    string stackPushSymbol = null;
 
-                    transitions.Add(new Transition(firstState, secondState, label));
+                    if (isPDA)
+                    {
+                        if (label == "_")
+                        {
+                            stackPopSymbol = "_";
+                            stackPushSymbol = "_";
+                        }
+                        else
+                        {
+                            stackPopSymbol = commaSplitLine[1].Last().ToString();
+                            stackPushSymbol = commaSplitLine[2].First().ToString();
+                        }
+                    }
+
+                    transitions.Add(new Transition(firstState, secondState, label, stackPopSymbol, stackPushSymbol));
                 }
                 else if (currentMultiLineType == MultiLineType.Words)
                 {
@@ -323,7 +377,7 @@ namespace ALE2_2211082_ThomasVanIersel
             }
 
             // Create a new Automaton and return it.
-            return new Automaton(alphabet, states, transitions);
+            return new Automaton(alphabet, states, transitions, isPDA, stack);
         }
 
         /// <summary>
@@ -432,7 +486,7 @@ namespace ALE2_2211082_ThomasVanIersel
         /// <summary>
         /// Creates the graph picture of the automaton, using GraphViz.
         /// </summary>
-        private void CreateGraph(Automaton a, bool isDFAConversion = false)
+        private void CreateGraph(Automaton a, Image graph)
         {
             // Use the GraphvizHelper object to generate the graph and display it in the ui.
             bool graphCreated = gh.CreateGraph(a);
@@ -440,10 +494,7 @@ namespace ALE2_2211082_ThomasVanIersel
             if (graphCreated == true)
             {
                 // Apply the created .png file to the image element as a bitmap.
-                if (isDFAConversion)
-                    pcGraph.Source = gh.GetBitmapFromPng();
-                else
-                    graph.Source = gh.GetBitmapFromPng();
+                graph.Source = gh.GetBitmapFromPng();
             }
             else
             {

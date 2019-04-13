@@ -397,7 +397,10 @@ namespace ALE2_2211082_ThomasVanIersel
 
             foreach (string word in words)
             {
-                result.Add(word, automaton.IsAcceptedWord(word, automaton.States.First()));
+                if (automaton.IsPDA)
+                    result.Add(word, automaton.IsAcceptedWord(word, automaton.States.First(), new Stack<string>()));
+                else
+                    result.Add(word, automaton.IsAcceptedWord(word, automaton.States.First()));
             }
 
             return result;
@@ -483,8 +486,9 @@ namespace ALE2_2211082_ThomasVanIersel
                 }
             }
 
-            // Add the sink state, create and return the new DFA.
-            states.Add(sinkState);
+            // Add the sink state (if it has any transitions going to it), create and return the new DFA.
+            if (transitions.Where(t => t.SecondState == sinkState).Count() > 0)
+                states.Add(sinkState);
             return new Automaton(alphabet, states, transitions);
         }
     }

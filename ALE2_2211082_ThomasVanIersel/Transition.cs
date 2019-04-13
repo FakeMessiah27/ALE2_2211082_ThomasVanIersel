@@ -11,12 +11,16 @@ namespace ALE2_2211082_ThomasVanIersel
         public State FirstState { get; set; }
         public State SecondState { get; set; }
         public string Label { get; set; }
+        public string StackPopSymbol { get; set; }
+        public string StackPushSymbol { get; set; }
 
-        public Transition(State firstState, State secondState, string label)
+        public Transition(State firstState, State secondState, string label, string stackPopSymbol = null, string stackPushSymbol = null)
         {
             FirstState = firstState;
             SecondState = secondState;
             Label = label;
+            StackPopSymbol = stackPopSymbol;
+            StackPushSymbol = stackPushSymbol;
         }
     }
 }

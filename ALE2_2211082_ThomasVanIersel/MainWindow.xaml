@@ -12,14 +12,14 @@
                 <Grid Background="LightBlue">
                     <Label Content="DFA:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="187,10,0,0" RenderTransformOrigin="0.49,0.692"/>
                     <Label x:Name="lblIsDFA" Content="No" HorizontalAlignment="Left" Margin="226,10,0,0" VerticalAlignment="Top" Visibility="Hidden"/>
-                    <ListBox x:Name="lbWordTesting" HorizontalAlignment="Left" Height="187" Margin="10,36,0,0" VerticalAlignment="Top" Width="275"/>
+                    <ListBox x:Name="lbWordTesting" Height="187" Margin="10,36,319,0" VerticalAlignment="Top"/>
                     <Label Content="Word testing:" HorizontalAlignment="Left" Margin="5,10,0,0" VerticalAlignment="Top"/>
                     <Label Content="Test your own word:" HorizontalAlignment="Left" Margin="10,228,0,0" VerticalAlignment="Top"/>
                     <TextBox x:Name="tbTestWord" HorizontalAlignment="Left" Height="24" Margin="10,254,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="160" ToolTipService.ShowOnDisabled="True"/>
                     <Button x:Name="btnTestWord" Content="Test!" HorizontalAlignment="Left" Margin="176,254,0,0" VerticalAlignment="Top" Width="54" Height="24" Click="BtnTestWord_Click" ToolTipService.ShowOnDisabled="True"/>
                     <Label Content="Finite:" HorizontalAlignment="Left" Margin="316,10,0,0" VerticalAlignment="Top"/>
                     <Label x:Name="lblIsFinite" Content="No" HorizontalAlignment="Left" Margin="362,10,0,0" VerticalAlignment="Top" Visibility="Visible"/>
-                    <ListBox x:Name="lbFiniteWords" HorizontalAlignment="Left" Height="187" Margin="315,36,0,0" VerticalAlignment="Top" Width="275"/>
+                    <ListBox x:Name="lbFiniteWords" Height="187" Margin="0,36,14,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="275"/>
                     <Label Content="Finite words:" HorizontalAlignment="Left" Margin="513,10,0,0" VerticalAlignment="Top"/>
                 </Grid>
             </TabItem>
@@ -29,7 +29,7 @@
                         <Image x:Name="graph" Height="328" Margin="0,30,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="584"/>
                     </local:ZoomBorder>
                     <Label x:Name="lblGraph" Content="Graph:" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Height="26" Width="45"/>
-                    <Label Content="Help" HorizontalAlignment="Left" Margin="261,0,0,0" VerticalAlignment="Top" Height="26" Width="35" ToolTip="Use scroll wheel to zoom, left click and drag to pan, right click to reset."/>
+                    <Label Content="Help" HorizontalAlignment="Left" Margin="333,0,0,0" VerticalAlignment="Top" Height="26" Width="35" ToolTip="Use scroll wheel to zoom, left click and drag to pan, right click to reset."/>
                     <Button x:Name="btnSetPath" Content="Set GraphViz path" HorizontalAlignment="Left" Margin="431,3,0,0" VerticalAlignment="Top" Width="104" Height="23" Click="BtnSetDotPath_Click"/>
                 </Grid>
             </TabItem>
@@ -39,8 +39,17 @@
                         <Image x:Name="pcGraph" Height="328" Margin="0,30,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="584"/>
                     </local:ZoomBorder>
                     <Label Content="Convert an NFA to a DFA:" HorizontalAlignment="Left" Margin="10,2,0,0" VerticalAlignment="Top" Height="26" ToolTip="Use scroll wheel to zoom, left click and drag to pan, right click to reset."/>
-                    <Button x:Name="btnConvertToDfa" Content="Convert" HorizontalAlignment="Left" Margin="159,3,0,0" VerticalAlignment="Top" Width="73" Height="23" Click="BtnConvertToDfa_Click"/>
+                    <Button x:Name="btnConvertToDfa" Content="Convert" HorizontalAlignment="Left" Margin="159,3,0,0" VerticalAlignment="Top" Width="73" Height="23" Click="BtnConvertToDfa_Click" IsEnabled="False"/>
                     <Button x:Name="btnWriteDFAToFile" Content="Write to file" HorizontalAlignment="Left" Margin="266,3,0,0" VerticalAlignment="Top" Width="78" Height="23" Click="BtnWriteDFAToFile_Click" IsEnabled="false"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Remove Epsilons" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Margin="-5,0,0,0">
+                <Grid Background="LightBlue">
+                    <local:ZoomBorder x:Name="bordergraphNoEps" ClipToBounds="True">
+                        <Image x:Name="graphNoEps" Height="328" Margin="0,30,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="584"/>
+                    </local:ZoomBorder>
+                    <Label Content="Show graph of automaton without epsilons:" HorizontalAlignment="Left" Margin="10,2,0,0" VerticalAlignment="Top" Height="26" ToolTip="Use scroll wheel to zoom, left click and drag to pan, right click to reset."/>
+                    <Button x:Name="btnRemoveEpsilons" Content="Show Graph" HorizontalAlignment="Left" Margin="266,3,0,0" VerticalAlignment="Top" Width="73" Height="23" Click="BtnRemoveEpsilons_Click" IsEnabled="False"/>
                 </Grid>
             </TabItem>
         </TabControl>
@@ -73,10 +82,11 @@
             <Label Content="Or select a file" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" FontSize="18" FontWeight="Bold" Grid.Column="1"/>
             <Button x:Name="btnBrowse" Content="Browse" Margin="14,69,0,0" VerticalAlignment="Top" Click="BtnBrowseFile_Click" HorizontalAlignment="Left" Width="81" Grid.Column="1"/>
             <Label Content="Selected file:" HorizontalAlignment="Left" Margin="10,44,0,0" Grid.Column="1" Height="26" VerticalAlignment="Top"/>
-            <Label x:Name="lblSelectedFile" Content="None" Margin="92,44,0,0" Grid.Column="1" HorizontalAlignment="Left" Width="39" Height="26" VerticalAlignment="Top"/>
+            <Label x:Name="lblSelectedFile" Content="None" Margin="92,44,0,0" Grid.Column="1" HorizontalAlignment="Left" Width="144" Height="26" VerticalAlignment="Top"/>
             <TextBox x:Name="tbRegularExpression" Height="23" Margin="10,49,33,0" TextWrapping="Wrap" VerticalAlignment="Top" ToolTip="The regular expression must be in prefix notation" Text="|(.(|(e,f),.(f,g)),|(b,*(c)))"/>
             <RadioButton x:Name="rbRegularExpression" Content="" HorizontalAlignment="Right" Margin="0,3,2,0" VerticalAlignment="Top" Width="15" Checked="RbRegularExpression_Checked" />
             <RadioButton x:Name="rbSelectFile" HorizontalAlignment="Left" Margin="2,3,0,0" VerticalAlignment="Top" Grid.Column="1" Width="14" Checked="RbSelectFile_Checked" IsChecked="True"/>
+            <CheckBox x:Name="cbPDA" Content="PDA" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10,5,10,10"/>
         </Grid>
     </Grid>
 </Window>

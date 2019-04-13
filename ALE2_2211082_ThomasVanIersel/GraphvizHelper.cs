@@ -111,12 +111,26 @@ namespace ALE2_2211082_ThomasVanIersel
             // Write the lines for all of the transitions.
             foreach (Transition t in automaton.Transitions)
             {
-                // An empty transition is recorded with an underscore ("_"); it will be written in the graph with an epsilon ("ε").
-                // Ex: "C" -> "A" [label="ε"] (This would be a transition from state C to state A with label ε).
-                if (t.Label == "_")
-                    tw.WriteLine(string.Format("\"{0}\" -> \"{1}\" [label=\"ε\"]", t.FirstState, t.SecondState));
+                if (!automaton.IsPDA)
+                {
+                    // An empty transition is recorded with an underscore ("_"); it will be written in the graph with an epsilon ("ε").
+                    // Ex: "C" -> "A" [label="ε"] (This would be a transition from state C to state A with label ε).
+                    if (t.Label == "_")
+                        tw.WriteLine(string.Format("\"{0}\" -> \"{1}\" [label=\"ε\"]", t.FirstState, t.SecondState));
+                    else
+                        tw.WriteLine(string.Format("\"{0}\" -> \"{1}\" [label=\"{2}\"]", t.FirstState, t.SecondState, t.Label));
+                }
                 else
-                    tw.WriteLine(string.Format("\"{0}\" -> \"{1}\" [label=\"{2}\"]", t.FirstState, t.SecondState, t.Label));
+                {
+                    string label = t.Label == "_" ? "ε" : t.Label;
+                    string stackPopSymbol = t.StackPopSymbol == "_" ? "ε" : t.StackPopSymbol;
+                    string stackPushSymbol = t.StackPushSymbol == "_" ? "ε" : t.StackPushSymbol;
+
+                    if (stackPopSymbol == "ε" && stackPushSymbol == "ε")
+                        tw.WriteLine(string.Format("\"{0}\" -> \"{1}\" [label=\"{2}\"]", t.FirstState, t.SecondState, label));
+                    else
+                        tw.WriteLine(string.Format("\"{0}\" -> \"{1}\" [label=\"{2} [{3}/{4}]\"]", t.FirstState, t.SecondState, label, stackPopSymbol, stackPushSymbol));
+                }
             }
         }
 
